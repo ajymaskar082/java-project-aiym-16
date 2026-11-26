@@ -1,0 +1,138 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "model" {
+    abstract class Person {
+        - fullName: String
+        - phone: String
+        - address: String
+        + getFullName(): String
+        + getPhone(): String
+        + getAddress(): String
+        + getRole(): String
+    }
+
+    class Sender {
+        + getRole(): String
+    }
+
+    class Recipient {
+        + getRole(): String
+    }
+
+    class Parcel {
+        - trackingNumber: String
+        - weight: double
+        - status: DeliveryStatus
+        - trackingHistory: List<TrackingEvent>
+        + updateStatus(status: DeliveryStatus): void
+        + getTrackingHistory(): List<TrackingEvent>
+    }
+
+    class PostOffice {
+        - officeId: int
+        - name: String
+        - address: String
+    }
+
+    class TrackingEvent {
+        - eventId: long
+        - status: DeliveryStatus
+        - description: String
+        - eventTime: LocalDateTime
+    }
+
+    enum DeliveryStatus {
+        REGISTERED
+        ACCEPTED
+        IN_TRANSIT
+        ARRIVED_AT_OFFICE
+        DELIVERED
+        LOST
+    }
+}
+
+package "repository" {
+    interface CrudDao<T> {
+        + save(entity: T): void
+        + findById(id: String): Optional<T>
+        + findAll(): List<T>
+        + update(entity: T): void
+    }
+
+    abstract class Repository<T> {
+        # connection: Connection
+    }
+
+    class SqliteParcelDao {
+        + save(parcel: Parcel): void
+        + findById(id: String): Optional<Parcel>
+        + findAll(): List<Parcel>
+        + update(parcel: Parcel): void
+    }
+}
+
+package "database" {
+    class DatabaseConnection {
+        + getConnection(): Connection
+        + initializeSchema(): void
+    }
+}
+
+package "service" {
+    class ParcelService {
+        - dao: CrudDao<Parcel>
+        - trackingNumberGenerator: TrackingNumberGenerator
+        + registerParcel(parcel: Parcel): Parcel
+        + findParcel(trackingNumber: String): Optional<Parcel>
+        + updateStatus(trackingNumber: String, status: DeliveryStatus): void
+        + getAllParcels(): List<Parcel>
+        + getStatistics(): Map<DeliveryStatus, Long>
+    }
+
+    class AsyncReportService {
+        - executor: ExecutorService
+        + exportAsync(): Future<Path>
+    }
+}
+
+package "storage" {
+    class CsvExporter {
+        + export(parcels: List<Parcel>, path: Path): void
+    }
+}
+
+package "util" {
+    class TrackingNumberGenerator {
+        + generate(): String
+    }
+}
+
+package "exception" {
+    class ParcelNotFoundException
+}
+
+Person <|-- Sender
+Person <|-- Recipient
+
+CrudDao <|.. Repository
+Repository <|-- SqliteParcelDao
+
+Parcel --> Sender
+Parcel --> Recipient
+Parcel --> PostOffice
+Parcel *-- TrackingEvent
+Parcel --> DeliveryStatus
+
+PostOffice "1" -- "0..*" Parcel
+
+ParcelService --> CrudDao
+ParcelService --> TrackingNumberGenerator
+ParcelService ..> ParcelNotFoundException
+
+SqliteParcelDao --> DatabaseConnection
+AsyncReportService --> CsvExporter
+CsvExporter ..> Parcel
+
+@enduml

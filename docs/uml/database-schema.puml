@@ -1,0 +1,54 @@
+@startuml
+hide methods
+hide stereotypes
+
+entity "senders" as Senders {
+  * sender_id : INTEGER <<PK>>
+  --
+  full_name : TEXT
+  phone : TEXT
+  address : TEXT
+}
+
+entity "recipients" as Recipients {
+  * recipient_id : INTEGER <<PK>>
+  --
+  full_name : TEXT
+  phone : TEXT
+  address : TEXT
+}
+
+entity "post_offices" as Offices {
+  * office_id : INTEGER <<PK>>
+  --
+  name : TEXT
+  address : TEXT
+}
+
+entity "parcels" as Parcels {
+  * parcel_id : INTEGER <<PK>>
+  --
+  tracking_number : TEXT <<UNIQUE>>
+  sender_id : INTEGER <<FK>>
+  recipient_id : INTEGER <<FK>>
+  office_id : INTEGER <<FK>>
+  weight : REAL
+  status : TEXT
+  created_at : TEXT
+}
+
+entity "tracking_events" as Events {
+  * event_id : INTEGER <<PK>>
+  --
+  parcel_id : INTEGER <<FK>>
+  status : TEXT
+  description : TEXT
+  event_time : TEXT
+}
+
+Senders ||--o{ Parcels : жібереді
+Recipients ||--o{ Parcels : қабылдайды
+Offices ||--o{ Parcels : қабылдайды
+Parcels ||--o{ Events : статус тарихы
+
+@enduml

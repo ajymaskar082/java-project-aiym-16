@@ -1,0 +1,36 @@
+@startuml
+autonumber
+
+actor "Пошта қызметкері" as Employee
+participant "ConsoleMenu" as Menu
+participant "ParcelService" as Service
+participant "TrackingNumberGenerator" as Generator
+participant "Parcel" as Parcel
+participant "SqliteParcelDao" as DAO
+database "SQLite Database" as DB
+
+Employee -> Menu : Сәлемдеме мәліметтерін енгізу
+Menu -> Service : registerParcel(parcel)
+
+Service -> Generator : generate()
+Generator --> Service : trackingNumber
+
+Service -> Parcel : setTrackingNumber(trackingNumber)
+Service -> DAO : save(parcel)
+
+DAO -> DB : INSERT INTO parcels
+DAO -> DB : INSERT INTO tracking_events
+DB --> DAO : Сақтау нәтижесі
+
+alt Сәтті сақталды
+    DAO --> Service : Сәтті
+    Service --> Menu : Тіркелген сәлемдеме
+    Menu --> Employee : Трек-нөмірді көрсету
+else Сақтау қатесі
+    DAO -> DB : ROLLBACK
+    DAO --> Service : DataAccessException
+    Service --> Menu : Қате туралы хабарлама
+    Menu --> Employee : Тіркеу сәтсіз
+end
+
+@enduml
